@@ -1,25 +1,33 @@
 const java = require('java')
+const { Redis } = require('ioredis')
 const fs = require('fs')
+const { redisConfig, sessionKey } = require('./config')
+
 const dir = './target/dependency'
 
-const deps = fs.readdirSync(dir)
-deps.forEach(dep => java.classpath.push(`${dir}/${dep}`))
-
 java.classpath.push('src')
+fs.readdirSync(dir).forEach(dep => java.classpath.push(`${dir}/${dep}`))
 
+const redisInst = new Redis(redisConfig)
 const serializer = java.newInstanceSync('com.Serializer')
-const user = java.newInstanceSync('com.User', 'tmax');
-console.log(user.getNameSync())
 
-const result = serializer.serializeSync(user)
-console.log(result)
+redisInst.get(sessionKey).then((value) => {
+  value = Buffer.from(value, 'binary')
+  console.log(value)
 
-const bytes = java.newArray('byte', Array.from(result))
+  const readBytes = java.newArray('byte', Array.from(value))
+  const shiroUser = serializer.deserializeSync(readBytes);
 
-const user2 = serializer.deserializeSync(bytes);
-console.log(user2.getNameSync())
+  for (let i in shiroUser) {
+    if (typeof i === 'function') {
+      console.log(shiroUser[i]())
+    } else
+      console.log(i)
+  }
+  process.exit(0)
 
-process.exit(0)
+})
+
 
 
 /**

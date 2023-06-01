@@ -14,3 +14,5 @@ dist/*.js
 .vscode
 
 src/**/*.class
+config.js
+target/dependency/mixc-*.jar
